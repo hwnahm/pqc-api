@@ -2,6 +2,8 @@ const express = require('express');
 const sigkeyRouter = new express.Router();
 const sigkeyCtrl = require('../controllers/sigkey.ctrl');
 const sigkeyValidator = require('../validators/sigkey.validator');
+const multer = require('multer');
+const upload = multer();
 
 /**
  * @swagger
@@ -36,14 +38,19 @@ sigkeyRouter.get('/algolist', sigkeyCtrl.listAlgos);
  *       description: generate post quantum cryptography key for signature
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/definitions/NewSigkey'
  *     responses:
  *       "200":
  *         description: "successful operation"
  */
-sigkeyRouter.post('/create', sigkeyValidator.createSigkey(), sigkeyCtrl.createSigkey);
+sigkeyRouter.post(
+  '/create',
+  upload.none(),
+  sigkeyValidator.createSigkey(),
+  sigkeyCtrl.createSigkey,
+);
 
 /**
  * @swagger
@@ -56,14 +63,14 @@ sigkeyRouter.post('/create', sigkeyValidator.createSigkey(), sigkeyCtrl.createSi
  *       description: sign a message by PQC Sigkey
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/definitions/SignMessage'
  *     responses:
  *       "200":
  *         description: "successful operation"
  */
-sigkeyRouter.post('/sign', sigkeyValidator.signMessage(), sigkeyCtrl.signMessage);
+sigkeyRouter.post('/sign', upload.none(), sigkeyValidator.signMessage(), sigkeyCtrl.signMessage);
 
 /**
  * @swagger
@@ -76,13 +83,18 @@ sigkeyRouter.post('/sign', sigkeyValidator.signMessage(), sigkeyCtrl.signMessage
  *       description: verify a message signed by PQC Sigkey
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/definitions/VerifyMessage'
  *     responses:
  *       "200":
  *         description: "successful operation"
  */
-sigkeyRouter.post('/verify', sigkeyValidator.verifyMessage(), sigkeyCtrl.verifyMessage);
+sigkeyRouter.post(
+  '/verify',
+  upload.none(),
+  sigkeyValidator.verifyMessage(),
+  sigkeyCtrl.verifyMessage,
+);
 
 module.exports = sigkeyRouter;
