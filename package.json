@@ -17,7 +17,7 @@
     "ethers": "^5.6.9",
     "express": "^4.18.1",
     "express-validator": "^6.14.2",
-    "liboqs-node": "file:../../Quantum/liboqs-node",
+    "liboqs-node": "file:../../Quantum/norma/liboqs-node",
     "mongodb": "^4.8.0",
     "mongoose": "^5.13.3",
     "morgan": "^1.10.0",
