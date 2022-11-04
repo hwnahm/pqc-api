@@ -6,6 +6,8 @@ const ErrorMessage = require('../utils/errorMessage').ErrorMessage;
 const ObjectID = require('mongodb').ObjectID;
 const { _errorFormatter } = require('../utils/helper');
 const { arrayify, hexlify, hashMessage } = require('ethers/lib/utils');
+const { ethers } = require('ethers');
+const crypto = require('crypto');
 
 const {
   Random, // Utilities for generating secure random numbers
@@ -35,9 +37,20 @@ module.exports = {
         return handlerError(req, res, ErrorMessage.SIGKEY_EXIST);
       }
 
+      // Seed
+      const wallet = ethers.Wallet.createRandom();
+      const mnemonic = wallet.mnemonic.phrase;
+      const address = await wallet.getAddress();
+
+      const hash = crypto.createHash('sha384');
+      const data = hash.update(mnemonic, 'utf-8');
+      const seed = data.digest('hex');
+      console.log('===>', `mnemonic: ${mnemonic}, hash: ${seed}`);
+      console.log('===>', `address: ${address}`);
+
       // PQC 키페어 생성
       const sig = new Signature(algorithm);
-      const publicKey = hexlify(sig.generateKeypair());
+      const publicKey = hexlify(sig.generateKeypair(Buffer.from(seed, 'utf8')));
       const secretKey = hexlify(sig.exportSecretKey());
 
       const newVault = {
@@ -45,6 +58,8 @@ module.exports = {
         publicKey,
         secretKey,
         algorithm,
+        mnemonic,
+        address,
       };
 
       let result = await sigkeyRepository.create(newVault);

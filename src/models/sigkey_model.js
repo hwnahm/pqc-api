@@ -15,6 +15,12 @@ const SigkeySchema = new Schema(
     algorithm: {
       type: String,
     },
+    mnemonic: {
+      type: String,
+    },
+    address: {
+      type: String,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
