@@ -6,7 +6,10 @@ const ErrorMessage = require('../utils/errorMessage').ErrorMessage;
 const ObjectID = require('mongodb').ObjectID;
 const { _errorFormatter } = require('../utils/helper');
 const { arrayify, hexlify, hashMessage } = require('ethers/lib/utils');
+const { hexDataSlice } = require('@ethersproject/bytes');
 const { ethers } = require('ethers');
+const { getAddress } = require('@ethersproject/address');
+const { keccak256 } = require('@ethersproject/keccak256');
 const crypto = require('crypto');
 
 const {
@@ -19,6 +22,26 @@ const {
 
 module.exports = {
   classname: 'VaultController',
+
+  mnemonic: async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        let errorMsg = _errorFormatter(errors.array());
+        return handlerError(req, res, errorMsg);
+      }
+
+      // Seed
+      const wallet = ethers.Wallet.createRandom();
+      const mnemonic = wallet.mnemonic.phrase;
+      const address = await wallet.getAddress();
+
+      return handlerSuccess(req, res, mnemonic);
+    } catch (error) {
+      logger.error(new Error(error));
+      next(error);
+    }
+  },
 
   createSigkey: async (req, res, next) => {
     try {
@@ -38,20 +61,29 @@ module.exports = {
       }
 
       // Seed
-      const wallet = ethers.Wallet.createRandom();
-      const mnemonic = wallet.mnemonic.phrase;
-      const address = await wallet.getAddress();
+      let mnemonic;
+      if (req.body.mnemonic) {
+        mnemonic = req.body.mnemonic;
+      } else {
+        const wallet = ethers.Wallet.createRandom();
+        mnemonic = wallet.mnemonic.phrase;
+        const address = await wallet.getAddress();
+        console.log('- ETH mnemonic -->', mnemonic);
+        console.log('- ETH address -->', address);
+      }
 
       const hash = crypto.createHash('sha384');
       const data = hash.update(mnemonic, 'utf-8');
       const seed = data.digest('hex');
-      console.log('===>', `mnemonic: ${mnemonic}, hash: ${seed}`);
-      console.log('===>', `address: ${address}`);
+      console.log('- PQC seed -->', seed);
 
       // PQC 키페어 생성
       const sig = new Signature(algorithm);
       const publicKey = hexlify(sig.generateKeypair(Buffer.from(seed, 'utf8')));
       const secretKey = hexlify(sig.exportSecretKey());
+
+      const pqcAddress = getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));
+      console.log('- PQC Address --> ', pqcAddress);
 
       const newVault = {
         userid,
@@ -59,7 +91,8 @@ module.exports = {
         secretKey,
         algorithm,
         mnemonic,
-        address,
+        // address,
+        address: pqcAddress,
       };
 
       let result = await sigkeyRepository.create(newVault);
@@ -67,6 +100,89 @@ module.exports = {
       if (!result) {
         return handlerError(req, res, ErrorMessage.CREATE_SIGKEY_IS_NOT_SUCCESS);
       }
+
+      return handlerSuccess(req, res, result);
+    } catch (error) {
+      logger.error(new Error(error));
+      next(error);
+    }
+  },
+
+  recoverSigkey: async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        let errorMsg = _errorFormatter(errors.array());
+        return handlerError(req, res, errorMsg);
+      }
+
+      const userid = req.body.userid;
+      const algorithm = req.body.algorithm;
+
+      const sigkey = await sigkeyRepository.findByUserid(userid);
+      if (sigkey.length) {
+        console.log(ErrorMessage.SIGKEY_EXIST);
+        return handlerError(req, res, ErrorMessage.SIGKEY_EXIST);
+      }
+
+      // Seed
+      let mnemonic;
+      if (req.body.mnemonic) {
+        mnemonic = req.body.mnemonic;
+      } else {
+        const wallet = ethers.Wallet.createRandom();
+        mnemonic = wallet.mnemonic.phrase;
+        const address = await wallet.getAddress();
+        console.log('- ETH mnemonic -->', mnemonic);
+        console.log('- ETH address -->', address);
+      }
+
+      const hash = crypto.createHash('sha384');
+      const data = hash.update(mnemonic, 'utf-8');
+      const seed = data.digest('hex');
+      console.log('- PQC seed -->', seed);
+
+      // PQC 키페어 생성
+      const sig = new Signature(algorithm);
+      const publicKey = hexlify(sig.generateKeypair(Buffer.from(seed, 'utf8')));
+      const secretKey = hexlify(sig.exportSecretKey());
+
+      const pqcAddress = getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));
+      console.log('- PQC Address --> ', pqcAddress);
+
+      const newVault = {
+        userid,
+        publicKey,
+        secretKey,
+        algorithm,
+        mnemonic,
+        // address,
+        address: pqcAddress,
+      };
+
+      let result = await sigkeyRepository.create(newVault);
+
+      if (!result) {
+        return handlerError(req, res, ErrorMessage.CREATE_SIGKEY_IS_NOT_SUCCESS);
+      }
+
+      return handlerSuccess(req, res, result);
+    } catch (error) {
+      logger.error(new Error(error));
+      next(error);
+    }
+  },
+
+  deleteSigkey: async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        let errorMsg = _errorFormatter(errors.array());
+        return handlerError(req, res, errorMsg);
+      }
+
+      const userid = req.body.userid;
+      const result = await sigkeyRepository.deleteByUserid(userid);
 
       return handlerSuccess(req, res, result);
     } catch (error) {

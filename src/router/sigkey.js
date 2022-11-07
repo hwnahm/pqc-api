@@ -29,6 +29,19 @@ sigkeyRouter.get('/algolist', sigkeyCtrl.listAlgos);
 
 /**
  * @swagger
+ * /api/sigkey/mnemonic:
+ *   post:
+ *     tags:
+ *       - SigkeyAPI
+ *     description: Mnemonic 생성
+ *     responses:
+ *       "200":
+ *         description: "successful operation"
+ */
+sigkeyRouter.post('/mnemonic', upload.none(), sigkeyCtrl.mnemonic);
+
+/**
+ * @swagger
  * /api/sigkey/create:
  *   post:
  *     tags:
@@ -50,6 +63,56 @@ sigkeyRouter.post(
   upload.none(),
   sigkeyValidator.createSigkey(),
   sigkeyCtrl.createSigkey,
+);
+
+/**
+ * @swagger
+ * /api/sigkey/recovery:
+ *   post:
+ *     tags:
+ *       - SigkeyAPI
+ *     description: PQC Sigkey 복구
+ *     requestBody:
+ *       description: recover post quantum cryptography key from mnemonic
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/definitions/RecoverSigkey'
+ *     responses:
+ *       "200":
+ *         description: "successful operation"
+ */
+sigkeyRouter.post(
+  '/recovery',
+  upload.none(),
+  sigkeyValidator.recoverSigkey(),
+  sigkeyCtrl.recoverSigkey,
+);
+
+/**
+ * @swagger
+ * /api/sigkey/delete:
+ *   post:
+ *     tags:
+ *       - SigkeyAPI
+ *     description: PQC Sigkey 삭제
+ *     requestBody:
+ *       description: delete post quantum cryptography key
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/definitions/DeleteSigkey'
+ *     responses:
+ *       "200":
+ *         description: "successful operation"
+ */
+sigkeyRouter.post(
+  '/delete',
+  upload.none(),
+  sigkeyValidator.deleteSigkey(),
+  sigkeyCtrl.deleteSigkey,
 );
 
 /**
