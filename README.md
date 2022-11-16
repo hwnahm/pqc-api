@@ -6,7 +6,7 @@ PQC Test API
 
 API 구동 :
 ```
-yarn add file:../liboqs-node
+yarn add file:[liboqs-node 폴더 위치]
 yarn dev
 ```
 
