@@ -6,8 +6,8 @@ PQC Test API
 
 API 구동 :
 ```
-yarn
-yarn start
+yarn add file:../liboqs-node
+yarn dev
 ```
 
 Swagger 페이지 접속 :
